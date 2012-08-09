@@ -1,4 +1,5 @@
 from game import Game, AI_REGISTRY
+import random
 try:
     import curses
 except ImportError:
@@ -16,6 +17,8 @@ def arg_bool(s):
 parser = argparse.ArgumentParser()
 parser.add_argument("--silent", default=False, action="store_true",
                     help="Disable ncurses output.")
+parser.add_argument("--seed", default=None, type=int,
+                    help="Random number generator seed.")
 for k, v in Game.default_options.items():
     if type(v) == bool:
         parser.add_argument("--"+k, type=arg_bool, default=v,
@@ -31,6 +34,7 @@ parser.add_argument("players", metavar="PLAYER", nargs="+",
                          ', '.join(AI_REGISTRY.keys()))
 
 args = parser.parse_args()
+random.seed(args.seed)
 g = Game(args.players, **args.__dict__)
 if args.silent:
     print (g.play())
