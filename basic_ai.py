@@ -64,11 +64,11 @@ class BasicAI(PlayerBase):
                     self.debug.write("\t\tinitial score %s\n" % new_score)
 
                     #if we're a minority holder, score becomes a penalty
-                    if self.index not in feature.get_owner():
+                    if self.index not in feature.owner:
                         self.debug.write("\t\tminority shareholder\n")
                         new_score = -new_score
                     #or if we're sharing the score with others, reduce it
-                    elif len(feature.get_owner()) > 1:
+                    elif len(feature.owner) > 1:
                         self.debug.write("\t\tequal partner\n")
                         #here we should consider whether we're helping someone ahead of us or not
                         #rather than apply a blanket penalty - cooperation is usually wise unless

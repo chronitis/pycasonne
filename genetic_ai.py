@@ -128,7 +128,7 @@ class GeneticAI(PlayerBase):
         elif feature.is_farm():
             score += self.genome.farm_city_factor * len(feature.cities(complete=False))
             score *= self.genome.farm_factor
-        if len(feature.get_owner()) > 1:
+        if len(feature.owners) > 1:
             score *= self.genome.coop_factor
         return score
 
@@ -136,13 +136,12 @@ class GeneticAI(PlayerBase):
         best_score = -1e100
         best_choice = []
         turns_left = self.interface.our_turns_left()
-        max_avatars = self.interface.option("avatars")
         avatars = self.interface.available_avatars()
 
         scores = collections.defaultdict(float)
         world_features = self.interface.sandbox().features
         for feature in world_features:
-            for owner in feature.get_owner():
+            for owner in feature.owners:
                 scores[owner.index] += self.eval_feature(feature)
 
         for (x, y, rotate) in possible:
@@ -153,14 +152,14 @@ class GeneticAI(PlayerBase):
 
             placement_scores = collections.defaultdict(float)
             for feature in sandbox.features:
-                for owner in feature.get_owner():
+                for owner in feature.owners:
                     placement_scores[owner.index] += self.eval_feature(feature)
 
             for feature in tile_features:
                 if feature.owners:
                     if feature.is_complete():
                         for owner in set(feature.owners):
-                            available = max_avatars - len(owner.claimed)
+                            available = owner.available()
                             if available < turns_left:
                                 placement_scores[owner.index] += (turns_left / max(available, 0.5)) * self.genome.avatar_return_factor
 

@@ -175,7 +175,7 @@ class CursesInterface(object):
         player = self.game.players[self.game.turn % self.game.nplayers]
         name = player.name
         colour = player.colour
-        avatars = self.game.options["avatars"] - len(player.claimed)
+        avatars = player.available()
 
         self.win_right.clear()
         self.win_right.addstr(0, 0, "PYCASONNE".rjust(32), curses.A_BOLD)
@@ -231,7 +231,7 @@ class CursesInterface(object):
                 message = ["Place tile (%d/%d options)" % \
                            (index + 1, len(possible)),
                            "Avatars available: %d" % \
-                           (self.game.options['avatars'] - len(player.claimed)),
+                           player.available(),
                            "Arrows choose, ENTER places",
                            "'l' lists claimed features"
                            "'e' enters free exploration mode"]
@@ -244,8 +244,8 @@ class CursesInterface(object):
                 return possible[index % len(possible)]
             elif key == ord("l"):
                 message = []
-                for seg in player.claimed:
-                    message += [seg.feature.desc(owner=False)]
+                for feature in player.features():
+                    message += [feature.desc(owner=False)]
                 if not message:
                     message = ["No avatars placed"]
             elif key == ord("e"):

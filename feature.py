@@ -28,7 +28,8 @@ class Feature(object):
     name = None
     zindex = None
     def __init__(self, tiles=None):
-        self.owners = collections.defaultdict(int)
+        self.avatars = []
+        self.owners = []
         self.tiles = tiles if tiles else []
         self.cleared = False
 
@@ -40,12 +41,26 @@ class Feature(object):
         "Return whether a player can take control of this feature"
         return False
 
-    def claim(self, player):
+    def claim(self, avatar):
+        assert avatar.available
         if self.can_own():
-            self.owners[player] += 1
+            self.avatars.append(avatar)
+            self.update_owners()
             return True
         else:
             return False
+          
+    def update_owners(self):
+        if len(self.avatars) == 0:
+			self.owners = []
+        elif len(self.avatars) == 1:
+            self.owners = [self.avatars[0].player]
+        else:
+            owner_scores = collections.defaultdict(int)
+            for a in self.avatars:
+                owner_scores[a.player] += a.strength
+            best_score = max(owner_scores.values())
+            self.owners = list(p for p in owner_scores if owner_scores[p] == best_score)
 
     def is_complete(self):
         """
@@ -54,29 +69,16 @@ class Feature(object):
         """
         return False
 
-    def get_owner(self):
-        """
-        Return a list of players tied for control, if any.
-        """
-        if self.owners and len(self.owners) == 1:
-            return list(self.owners.keys())
-        elif self.owners:
-            required_score = max(self.owners.values())
-            return [o for o in self.owners if self.owners[o] == required_score]
-        else:
-            return []
-
     def desc(self, owner=True, location=True):
         """
         Get a string describing the feature for UI purposes.
         """
-        owners = self.get_owner()
         s_owner = ""
-        if owner and not owners:
+        if owner and not self.owners:
             s_owner = "Unowned "
-        elif owner and len(owners) == 1:
+        elif owner and len(self.owners) == 1:
             s_owner = owners[0].name + " "
-        elif owner and owners:
+        elif owner and self.owners:
             s_owner = "Contested "
 
         s_location = ""
@@ -91,10 +93,9 @@ class Feature(object):
         Get the appropriate colour to represent the feature (unowned, player
         colour, contested colour).
         """
-        owner = self.get_owner()
-        if len(owner) == 1:
-            return owner[0].colour
-        elif len(owner) == 0:
+        if len(self.owners) == 1:
+            return self.owners[0].colour
+        elif len(self.owners) == 0:
             return COLOUR_WORLD
         else:
             return COLOUR_CONTESTED
@@ -151,7 +152,7 @@ class Segment(object):
         self.hash = None
 
     def __hash__(self):
-        if self.hash == None:
+        if self.hash is None:
             self.hash = hash((self.type, self.tile.x, self.tile.y, self.edges))
         return self.hash
 
@@ -250,7 +251,8 @@ class SegmentedFeature(Feature):
         for s in self.segments:
             s.feature = self
         self.tiles = list(set(s.tile for s in self.segments))
-        self.owners.update(other.owners)
+        self.avatars.extend(other.avatars)
+        self.update_owners()
         return self
 
     def __repr__(self):

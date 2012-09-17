@@ -50,9 +50,9 @@ class PlayerInterface(object):
         "Return the current scores of all players."
         return {p.index: p.score for p in self.__game.players}
 
-    def available_avatars(self):
-        "Return the number of avatars available. TODO: Redo avatars."
-        return self.option("avatars") - len(self.__player.claimed)
+    def available_avatars(self, big=False, small=False):
+        "Return the number of avatars (specified type) available."
+        return self.__player.available(big, small)
 
     def claimed_features(self):
         "Return a (proxied) list of the features we have claimed."
@@ -171,6 +171,7 @@ class Game(object):
         "river": True,
         "extent": 20,
         "avatars": 7,
+        "big-avatars": 0,
         "proxify": True,
         "inns-cathedrals": True,
         "shuffle-unplaceable": True
@@ -179,6 +180,7 @@ class Game(object):
         "river": "Enable the river expansion.",
         "extent": "Size of the game table.",
         "avatars": "Number of avatar pieces per player.",
+        "big-avatars": "Number of big (strength 2) avatars per player.",
         "proxify": "Whether to use copy-on-write or deepcopy to provide AI sandboxes.",
         "inns-cathedrals": "Enable the inns & cathedrals expansion.",
         "shuffle-unplaceable": "Whether to re-shuffle the stack after a player draws an unplaceable tile."
@@ -197,12 +199,14 @@ class Game(object):
         random.shuffle(reorder)
         playerclasses = [playerclasses[i] for i in reorder]
         playeroptions = [playeroptions[i] for i in reorder]
-        self.players = [Player(i, pc) for i, pc in enumerate(playerclasses)]
+        self.players = [Player(i, pc, self.options['avatars'], 
+                               self.options['big-avatars'])
+                        for i, pc in enumerate(playerclasses)]
 
         self.stack = generate_stack(river=self.options['river'],
                                     inns_cathedrals=self.options['inns-cathedrals'])
         if self.options['inns-cathedrals']:
-            self.options['avatars'] += 1
+            self.options['big-avatars'] += 1
         self.world = World(self.options, self.players)
         self.turn = 0
 
@@ -226,7 +230,6 @@ class Game(object):
             player = self.players[self.turn % self.nplayers]
             ai = self.ai[self.turn % self.nplayers]
 
-
             if self.options['shuffle-unplaceable']:
                 attempts = 0
                 while True:
@@ -244,7 +247,7 @@ class Game(object):
                 assert possible_locations, "No possible tile placements"
             chosen_placement = ai.place_tile(copy.deepcopy(tile),
                                              possible_locations)
-            assert chosen_placement in possible_locations, "Chose %s not in %s" % (chosen_placement, possible_locations)
+            assert chosen_placement in possible_locations, "Chose %s: not in %s" % (chosen_placement, possible_locations)
             x, y, rotate = chosen_placement
             tile = tile.rotate(rotate)
             assert self.world.can_place(tile, x, y)
@@ -255,12 +258,16 @@ class Game(object):
             self.interface.message("")
             for i in self.ai:
                 i.tile_placed(tile, x, y)
-            if self.options['avatars'] - len(player.claimed) > 0 and features:
-                chosen_feature = ai.place_avatar(features)
+            if player.available() > 0 and features:
+                result = ai.place_avatar(features)
+                if isinstance(result, tuple):
+                    chosen_feature, big, small = result
+                else:
+                    chosen_feature = result
+                    big = small = True
                 if chosen_feature:
                     assert chosen_feature in features, "AI returned invalid feature: %s (valid %s)" % (chosen_feature, features)
-                    chosen_feature.claim(player)
-                    player.claimed += [chosen_feature.segments[-1]]
+                    player.claim(chosen_feature, big, small)
                     self.interface.highlight_feature(chosen_feature)
                     self.interface.message("%s claimed %s" % \
                                            (player.name, chosen_feature.name))
@@ -272,40 +279,35 @@ class Game(object):
                 if feature.is_complete() and not feature.cleared:
                     score = feature.score()
                     feature.cleared = True
-                    owners = feature.get_owner()
-                    for owner in owners:
+                    for owner in feature.owners:
                         owner.score += score
-                        for seg in owner.claimed[:]:
-                            if seg.feature == feature:
-                                owner.claimed.remove(seg)
-                        assert not feature in [seg.feature
-                                               for seg in owner.claimed]
                         owner.completed.append(feature)
-                    if owners:
+                    for avatar in feature.avatars:
+                        avatar.segment = None
+                    if feature.owners:
                         self.interface.highlight_feature(feature)
                         self.interface.message("%s completed for %d" % \
                                                (feature.name, score))
                         self.interface.highlight_feature(feature, False)
                     for i in self.ai:
-                        i.feature_completed(feature, owners, score)
+                        i.feature_completed(feature, feature.owners, score)
             self.turn += 1
 
         for player in self.players:
-            for seg in player.claimed:
-                feature = seg.feature
-                assert not feature.cleared
-                assert not feature.is_complete()
-                if player in feature.get_owner():
+            for avatar in player.avatars:
+                if not avatar.available():
+                    feature = avatar.segment.feature
                     score = feature.score()
-                    player.score += score
-                    while feature in player.claimed:
-                        player.claimed.remove(feature)
+                    for player in feature.owners:
+                        player.score += score
                     self.interface.highlight_feature(feature)
-                    self.interface.message("incomplete %s worth %d" % \
-                                           (feature.name, score))
+                    self.interface.message("incomplete %s worth %d" % (feature.name, score))
                     self.interface.highlight_feature(feature, False)
                     for i in self.ai:
-                        i.feature_completed(feature, [player], score)
+                        i.feature_completed(feature, feature.owners, score)
+                    for avatar in feature.avatars:
+                        avatar.segment = None
+                        
         self.interface.message("Game over")
         msg = []
         for i, player in enumerate(sorted(self.players,

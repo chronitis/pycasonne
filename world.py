@@ -442,17 +442,26 @@ class Player(object):
 
     TODO: Have an avatar class rather than a list of claims.
     """
-    def __init__(self, index, playertype):
+    def __init__(self, index, playertype, avatars=7, big_avatars=1):
         self.index = index
         self.name = "Player %d" % index
         self.playertype = playertype
         self.colour = index + 1
-        self.claimed = []
+        self.avatars = [Avatar(self) for i in range(avatars)] + [BigAvatar(self) for i in range(big_avatars)]
         self.completed = []
         self.score = 0
 
     def features(self):
-        return [seg.feature for seg in self.claimed]
+        return [a.segment.feature for a in self.avatars if not a.available]
+    
+    def available(self, big=False, small=False):
+        "Return the number of available avatars (of the specified type)."
+        if big == small:
+            return sum(1 for a in self.avatars if a.available())
+        elif big:
+            return sum(1 for a in self.avatars if a.available() and a.big)
+        elif small:
+            return sum(1 for a in self.avatars if a.available() and not a.big)
 
     def __repr__(self):
         return "<Player %s: %s>" % (self.index, self.name)
@@ -468,12 +477,50 @@ class Player(object):
     #for some reason the default tries to call __hash__ on the new instance
     #before it has copied in the dictionary
     #connected to __eq__(int)?
+    """
     def __deepcopy__(self, memo):
         new_player = type(self)(self.index, self.playertype)
         new_player.__dict__.update(self.__dict__)
         new_player.claimed = copy.deepcopy(self.claimed, memo)
         new_player.completed = copy.deepcopy(self.completed, memo)
         return new_player
+    """
 
     def __hash__(self):
         return 1 << self.index
+        
+    def get_avatar(self, big=False, small=False):
+        assert self.available(big, small) > 0, "Attempted to get a non-existent avatar"
+        for a in self.avatars:
+            if a.available():
+                if big == small:
+                    return a
+                elif big:
+                    if a.big:
+                        return a
+                elif small:
+                    if not a.big:
+                        return a
+        assert True, "Unreachable"
+    
+    def claim(self, feature, big=False, small=False):
+        avatar = self.get_avatar(big, small)
+        feature.claim(avatar)
+        avatar.segment = feature.segments[-1]
+        
+class Avatar(object):
+    strength = 1
+    big = False
+    def __init__(self, player):
+        self.player = player
+        self.segment = None
+    
+    def available(self):
+        return self.segment == None
+        
+    def feature(self):
+        return None if self.segment == None else self.segment.feature
+
+class BigAvatar(Avatar):
+    strength = 2
+    big = True    
