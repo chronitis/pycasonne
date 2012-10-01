@@ -52,7 +52,7 @@ class Feature(object):
           
     def update_owners(self):
         if len(self.avatars) == 0:
-			self.owners = []
+            self.owners = []
         elif len(self.avatars) == 1:
             self.owners = [self.avatars[0].player]
         else:
