@@ -17,7 +17,7 @@ def worker(genomes):
         g = Game(["GeneticAI" for g in genomes], [dict(name=g.name(), genome=g) for g in genomes])
         result = g.play()
     except Exception as exc:
-        print "Exception raised in worker:", exc
+        print("Exception raised in worker:", exc)
         result = {}
     elapsed = time.time() - start
     return elapsed, result
@@ -38,15 +38,15 @@ class Population(object):
         genomes = self.initialise()
         self.pool = multiprocessing.Pool(processes=self.workers)
         games_per_generation = len(genomes)*self.games/self.players
-        print "%d genomes, %d rounds each, %d players per game -> %d games per generation" % (len(genomes), self.games, self.players, games_per_generation)
+        print("%d genomes, %d rounds each, %d players per game -> %d games per generation" % (len(genomes), self.games, self.players, games_per_generation))
         for i in range(self.generations):
             genomes = self.generation(genomes)
-            print "Generation:", i
-            print "Fitness: min=%(min_f).2f, max=%(max_f).2f, avg=%(avg_f).2f, stddev=%(stddev_f).2f" % self.history[-1]
-            print "Time: min=%(min_t).2f, max=%(max_t).2f, avg=%(avg_t).2f, stddev=%(stddev_t).2f" % self.history[-1]
+            print("Generation:", i)
+            print("Fitness: min=%(min_f).2f, max=%(max_f).2f, avg=%(avg_f).2f, stddev=%(stddev_f).2f" % self.history[-1])
+            print("Time: min=%(min_t).2f, max=%(max_t).2f, avg=%(avg_t).2f, stddev=%(stddev_t).2f" % self.history[-1])
             time_left = int(self.history[-1]['avg_t'] * (self.generations - i - 1) * games_per_generation / self.workers)
-            print "Time remaining: %d hour(s) %d min(s)" % (time_left / 3600, (time_left % 3600) / 60)
-            print "Best individual:", self.history[-1]["best"]
+            print("Time remaining: %d hour(s) %d min(s)" % (time_left / 3600, (time_left % 3600) / 60))
+            print("Best individual:", self.history[-1]["best"])
         self.pool.close()
         self.pool.join()
                 
@@ -71,8 +71,7 @@ class Population(object):
 
         while len(src) >= self.players:
             games += [tuple(src.pop() for _ in range(self.players))]
-        
-    
+         
         results = self.pool.map(worker, games)
         scores = collections.defaultdict(list)
         

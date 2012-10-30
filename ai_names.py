@@ -83,3 +83,8 @@ NAMES = [
     "Wheatley",
     "Claptrap"
 ]
+
+import random
+def random_name():
+    return NAMES.pop(random.randint(0, len(NAMES) - 1))
+

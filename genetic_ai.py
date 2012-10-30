@@ -3,7 +3,7 @@ import random
 import collections
 import base64
 import math
-from ai_names import NAMES
+from ai_names import random_name
 
 #scales 0-255 to log-distributed e**-1 -> e
 BYTE_TO_E = lambda x: math.pow(math.e, (x/128.)-1)
@@ -59,7 +59,7 @@ class Genome(object):
         return NotImplemented
 
     def __hash__(self):
-        return reduce(lambda x, y: x|y, (d << 8*i for i, d in enumerate(self.data)))
+        return hash(tuple(self.data))
 
     def update(self):
         for i, (name, func) in enumerate(self.parts):
@@ -73,7 +73,7 @@ class Genome(object):
         self.update()
 
     def name(self):
-        return base64.encodestring(''.join(chr(d) for d in self.data))
+        return base64.encodestring(bytes(self.data))
 
     def __repr__(self):
         inner = " ".join("%s=%.2f" % (p[0], getattr(self, p[0])) for p in self.parts)
@@ -101,7 +101,7 @@ class GeneticAI(PlayerBase):
         self.chosen_feature_segment = None
         self.index = self.interface.index()
         if name == None:
-            self.name = NAMES.pop(random.randint(0, len(NAMES) - 1))
+            self.name = random_name()
         else:
             self.name = name
         self.interface.set_name(self.name)

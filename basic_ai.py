@@ -1,5 +1,5 @@
 from game import PlayerBase
-from ai_names import NAMES
+from ai_names import random_name
 import random
 
 class FakeFile(object):
@@ -18,7 +18,7 @@ class BasicAI(PlayerBase):
         self.interface = interface
         self.chosen_feature_segment = None
         self.index = self.interface.index()
-        self.name = NAMES.pop(random.randint(0, len(NAMES) - 1))
+        self.name = random_name()
         self.interface.set_name(self.name)
         self.debug = FakeFile()#open("basicai-%s" % self.name, "w")
 
@@ -64,11 +64,11 @@ class BasicAI(PlayerBase):
                     self.debug.write("\t\tinitial score %s\n" % new_score)
 
                     #if we're a minority holder, score becomes a penalty
-                    if self.index not in feature.owner:
+                    if self.index not in feature.owners:
                         self.debug.write("\t\tminority shareholder\n")
                         new_score = -new_score
                     #or if we're sharing the score with others, reduce it
-                    elif len(feature.owner) > 1:
+                    elif len(feature.owners) > 1:
                         self.debug.write("\t\tequal partner\n")
                         #here we should consider whether we're helping someone ahead of us or not
                         #rather than apply a blanket penalty - cooperation is usually wise unless
