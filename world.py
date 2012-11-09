@@ -8,7 +8,7 @@ from proxy import proxify
 NORTH, EAST, SOUTH, WEST = range(4)
 EMPTY = 0
 (ROAD, RIVER, CITY, PENNANT,
-CLOISTER, CATHEDRAL, INN) = [1 << i for i in range(7)]
+CLOISTER, CATHEDRAL, INN) = [1 << iii for iii in range(7)]
 EDGES = {ROAD:"Road", RIVER:"River", CITY:"City", PENNANT:"Pennant",
          CLOISTER:"Cloister", EMPTY:"Empty", CATHEDRAL: "Cathedral", INN: "Inn"}
 

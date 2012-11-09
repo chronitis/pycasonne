@@ -121,10 +121,10 @@ class WorldBuffer(object):
 
 class NullInterface(object):
     def place_tile(self, player, tile, possible):
-        raise NotImplemented
+        raise NotImplementedError
 
     def place_avatar(self, player, features):
-        raise NotImplemented
+        raise NotImplementedError
 
     def add_tile(self, tile):
         pass

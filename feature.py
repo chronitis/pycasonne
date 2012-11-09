@@ -77,7 +77,7 @@ class Feature(object):
         if owner and not self.owners:
             s_owner = "Unowned "
         elif owner and len(self.owners) == 1:
-            s_owner = owners[0].name + " "
+            s_owner = self.owners[0].name + " "
         elif owner and self.owners:
             s_owner = "Contested "
 
@@ -170,6 +170,7 @@ class SegmentedFeature(Feature):
     it belongs.
     """
     merge = True
+    VCHAR = HCHAR = LDIAG = RDIAG = ""
     def __init__(self, segments):
         self.segments = segments
         tiles = list(set(s.tile for s in segments))
@@ -607,9 +608,9 @@ class Farm(SegmentedFeature):
             for cs in seg.city_segments:
                 city_segments.add(cs)
         cities = set(s.feature for s in city_segments)
-        if complete == True:
+        if complete is True:
             return [c for c in cities if c.is_complete()]
-        elif complete == False:
+        elif complete is False:
             return [c for c in cities if not c.is_complete()]
         else:
             return list(cities)

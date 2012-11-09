@@ -3,6 +3,7 @@ from world import World, Player
 from ncurses import NullInterface, CursesInterface
 import copy
 import random
+import collections
 
 class PlayerInterface(object):
     """
